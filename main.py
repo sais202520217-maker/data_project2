@@ -97,7 +97,6 @@ family_stats["최대생존률"] = family_stats["생존률"] == max_rate
 #     range_y=[0, 1]
 # )
 
-import plotly.express as px
 
 fig = px.scatter(
     family_stats,
