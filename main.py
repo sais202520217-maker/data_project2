@@ -3,7 +3,7 @@ import pandas as pd
 import plotly.express as px
 
 st.set_page_config(page_title="가족 구성과 생존율 분석", layout="centered")
-st.title("🚢 가족 구성에 따른 생존율 분석")
+st.title("🚢 가족 구성에 따른 생존율 분석 (전처리 포함)")
 
 # -------------------------------
 # 데이터 불러오기
@@ -14,92 +14,101 @@ def load_data():
 
 df = load_data()
 
-st.subheader("📄 데이터 컬럼 확인")
+st.subheader("📄 원본 데이터 컬럼")
 st.write(list(df.columns))
+
+# -------------------------------
+# 1. 결측치 처리
+# -------------------------------
+df = df[["sibsp", "parch", "survived"]].dropna()
+
+# -------------------------------
+# 2. 이상치 처리 (IQR 방식)
+# -------------------------------
+def remove_outliers_iqr(data, column):
+    q1 = data[column].quantile(0.25)
+    q3 = data[column].quantile(0.75)
+    iqr = q3 - q1
+    lower = q1 - 1.5 * iqr
+    upper = q3 + 1.5 * iqr
+    return data[(data[column] >= lower) & (data[column] <= upper)]
+
+df = remove_outliers_iqr(df, "sibsp")
+df = remove_outliers_iqr(df, "parch")
 
 # -------------------------------
 # 형제/배우자 수와 생존율
 # -------------------------------
-st.subheader("👨‍👩‍👧 형제/배우자 수와 생존율")
+sibsp_survival = df.groupby("sibsp", as_index=False)["survived"].mean()
 
-sibsp_survival = (
-    df.groupby("sibsp", as_index=False)["survived"].mean()
+# 3. 정규화 (Min-Max)
+sibsp_survival["정규화된 생존율"] = (
+    (sibsp_survival["survived"] - sibsp_survival["survived"].min()) /
+    (sibsp_survival["survived"].max() - sibsp_survival["survived"].min())
 )
+
+# 최대값 표시용 컬럼
+sibsp_survival["구분"] = "일반"
+sibsp_survival.loc[
+    sibsp_survival["정규화된 생존율"].idxmax(), "구분"
+] = "최대 생존율"
+
+st.subheader("👨‍👩‍👧 형제/배우자 수와 생존율")
 
 fig1 = px.bar(
     sibsp_survival,
     x="sibsp",
-    y="survived",
-    title="형제/배우자 수에 따른 생존율",
+    y="정규화된 생존율",
+    color="구분",
+    title="형제/배우자 수에 따른 정규화된 생존율",
     labels={
         "sibsp": "형제 / 배우자 수",
-        "survived": "생존율"
-    },
-    range_y=[0, 1]
+        "정규화된 생존율": "정규화된 생존율"
+    }
 )
 
 st.plotly_chart(fig1, use_container_width=True)
 
-st.caption("※ 1~2명의 형제 또는 배우자와 함께 탑승한 경우 생존율이 높게 나타남")
-
 # -------------------------------
-# 부모/자녀 수와 생존율
+# 가족 규모 분석
 # -------------------------------
-st.subheader("👪 부모/자녀 수와 생존율")
+df["familysize"] = df["sibsp"] + df["parch"] + 1
+family_survival = df.groupby("familysize", as_index=False)["survived"].mean()
 
-parch_survival = (
-    df.groupby("parch", as_index=False)["survived"].mean()
+family_survival["정규화된 생존율"] = (
+    (family_survival["survived"] - family_survival["survived"].min()) /
+    (family_survival["survived"].max() - family_survival["survived"].min())
 )
 
-fig2 = px.bar(
-    parch_survival,
-    x="parch",
-    y="survived",
-    title="부모/자녀 수에 따른 생존율",
+family_survival["구분"] = "일반"
+family_survival.loc[
+    family_survival["정규화된 생존율"].idxmax(), "구분"
+] = "최대 생존율"
+
+st.subheader("🏠 가족 규모와 생존율")
+
+fig2 = px.line(
+    family_survival,
+    x="familysize",
+    y="정규화된 생존율",
+    color="구분",
+    markers=True,
+    title="가족 규모에 따른 정규화된 생존율 변화",
     labels={
-        "parch": "부모 / 자녀 수",
-        "survived": "생존율"
-    },
-    range_y=[0, 1]
+        "familysize": "가족 구성원 수",
+        "정규화된 생존율": "정규화된 생존율"
+    }
 )
 
 st.plotly_chart(fig2, use_container_width=True)
 
-st.caption("※ 부모 또는 자녀와 동반 탑승한 승객의 생존율이 상대적으로 높음")
-
 # -------------------------------
-# 가족 규모와 생존율
+# 요약
 # -------------------------------
-st.subheader("🏠 가족 규모와 생존율")
-
-df["familysize"] = df["sibsp"] + df["parch"] + 1
-family_survival = (
-    df.groupby("familysize", as_index=False)["survived"].mean()
-)
-
-fig3 = px.line(
-    family_survival,
-    x="familysize",
-    y="survived",
-    markers=True,
-    title="가족 규모에 따른 생존율 변화",
-    labels={
-        "familysize": "가족 구성원 수",
-        "survived": "생존율"
-    },
-    range_y=[0, 1]
-)
-
-st.plotly_chart(fig3, use_container_width=True)
-
-# -------------------------------
-# 분석 요약
-# -------------------------------
-st.subheader("📌 분석 요약 (세특 활용 가능)")
+st.subheader("📌 전처리 및 분석 요약")
 
 st.info(
-    "분석 결과, 혼자 탑승한 경우보다 2~4명의 소규모 가족과 함께 탑승한 경우 "
-    "생존율이 가장 높게 나타났다. 반면 가족 규모가 커질수록 생존율은 감소하는 "
-    "경향을 보였으며, 이는 위기 상황에서 소규모 가족 단위의 이동과 협력이 "
-    "상대적으로 유리했기 때문으로 해석할 수 있다."
+    "결측치를 제거하고 IQR 방식을 이용해 이상치를 처리한 후, 생존율을 정규화하여 분석하였다. "
+    "그 결과 형제 또는 배우자 1~2명, 가족 규모 2~4명 구간에서 정규화된 생존율의 최대값이 나타났으며, "
+    "이는 소규모 가족 단위가 위기 상황에서 가장 효율적으로 대응했음을 시사한다."
 )
