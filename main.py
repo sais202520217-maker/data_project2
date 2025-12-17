@@ -14,7 +14,7 @@ st.write("형제/배우자 수(SibSp), 부모/자녀 수(Parch)가 생존율에 
 # -------------------------------
 @st.cache_data
 def load_data():
-    return pd.read_excel("fitness data.xlsx")
+    return pd.read_excel("titanic.xls")
 
 df = load_data()
 
