@@ -20,11 +20,11 @@ st.write(list(df.columns))
 # ===============================
 # 1️⃣ 결측치 처리
 # ===============================
-if "age" in df.columns:
-    df["age"] = df["age"].fillna(df["age"].median())
-
-if "fare" in df.columns:
-    df["fare"] = df["fare"].fillna(df["fare"].median())
+#if "age" in df.columns:
+#    df["age"] = df["age"].fillna(df["age"].median())
+#
+#if "fare" in df.columns:
+#    df["fare"] = df["fare"].fillna(df["fare"].median())
 
 # ===============================
 # 2️⃣ 이상치 처리 (IQR)
@@ -77,13 +77,35 @@ family_stats["최대생존률"] = family_stats["생존률"] == max_rate
 # ===============================
 # Plotly 그래프 (생존률 + 생존자 수)
 # ===============================
-fig = px.bar(
+# fig = px.bar(
+#     family_stats,
+#     x="familysize",
+#     y="생존률",
+#     color="최대생존률",
+#     text="생존자수",
+#     title="가족 규모에 따른 생존률 및 생존자 수",
+#     labels={
+#         "familysize": "가족 구성원 수",
+#         "생존률": "생존률",
+#         "생존자수": "생존자 수",
+#         "최대생존률": "최대 생존률 여부"
+#     },
+#     color_discrete_map={
+#         True: "crimson",
+#         False: "steelblue"
+#     },
+#     range_y=[0, 1]
+# )
+
+import plotly.express as px
+
+fig = px.scatter(
     family_stats,
     x="familysize",
     y="생존률",
+    size="생존자수",
     color="최대생존률",
-    text="생존자수",
-    title="가족 규모에 따른 생존률 및 생존자 수",
+    title="가족 규모에 따른 생존률 산점도",
     labels={
         "familysize": "가족 구성원 수",
         "생존률": "생존률",
@@ -93,8 +115,7 @@ fig = px.bar(
     color_discrete_map={
         True: "crimson",
         False: "steelblue"
-    },
-    range_y=[0, 1]
+    }
 )
 
 fig.update_traces(
