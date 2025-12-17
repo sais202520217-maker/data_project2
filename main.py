@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 # -------------------------------
 st.set_page_config(page_title="가족 수와 생존율 분석", layout="centered")
 st.title("🚢 가족 구성과 생존율 분석")
-st.write("형제/배우자 수(SibSp), 부모/자녀 수(Parch)가 생존율에 미치는 영향 분석")
+st.write("형제/배우자 수(sibsp), 부모/자녀 수(Parch)가 생존율에 미치는 영향 분석")
 
 # -------------------------------
 # 데이터 불러오기
@@ -24,9 +24,9 @@ st.dataframe(df.head())
 # -------------------------------
 # SibSp 생존율 분석
 # -------------------------------
-st.subheader("👨‍👩‍👧 형제/배우자 수(SibSp)와 생존율")
+st.subheader("👨‍👩‍👧 형제/배우자 수(sibsp)와 생존율")
 
-sibsp_survival = df.groupby("SibSp")["Survived"].mean()
+sibsp_survival = df.groupby("sibsp")["Survived"].mean()
 
 fig1, ax1 = plt.subplots()
 sibsp_survival.plot(kind="bar", ax=ax1)
