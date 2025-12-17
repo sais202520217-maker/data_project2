@@ -30,7 +30,7 @@ sibsp_survival = df.groupby("SibSp")["Survived"].mean()
 
 fig1, ax1 = plt.subplots()
 sibsp_survival.plot(kind="bar", ax=ax1)
-ax1.set_xlabel("형제/배우자 수 (SibSp)")
+ax1.set_xlabel("형제/배우자 수 (sibsp)")
 ax1.set_ylabel("생존율")
 ax1.set_ylim(0, 1)
 st.pyplot(fig1)
