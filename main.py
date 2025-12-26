@@ -47,7 +47,7 @@ st.subheader("형제/배우자 수(SibSp)와 생존율")
 
 if "SibSp" in df.columns and "Survived" in df.columns:
     sibsp_survival = (
-        df.groupby("SibSp", as_index=False)["Survived"]
+        df.groupby("SibSp", as_index=False)["survived"]
         .mean()
         .rename(columns={"Survived": "Survival Rate"})
     )
@@ -64,7 +64,7 @@ st.subheader("부모/자녀 수(Parch)와 생존율")
 
 if "Parch" in df.columns and "Survived" in df.columns:
     parch_survival = (
-        df.groupby("Parch", as_index=False)["Survived"]
+        df.groupby("Parch", as_index=False)["survived"]
         .mean()
         .rename(columns={"Survived": "Survival Rate"})
     )
