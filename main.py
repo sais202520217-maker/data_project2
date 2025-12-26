@@ -1,107 +1,64 @@
-import streamlit as st
 import pandas as pd
-import altair as alt
+import matplotlib.pyplot as plt
 
-st.set_page_config(page_title="Titanic Data Analysis", layout="centered")
+# 파일의 실제 컬럼 이름에 맞춰 데이터를 읽어옵니다.
+df = pd.read_csv("tpss_bcycl_od_statnhm_20251130.csv", encoding='cp949')
 
-st.title("Titanic 생존 데이터 분석")
-st.write("형제/배우자 수(sibsp), 부모/자녀 수(parch)와 생존율 및 인원 수를 함께 분석합니다.")
+# 2. 대여 건수 계산하기 (출발 대여소 기준)
+# '시작_대여소명'이 같은 것끼리 모아서 '전체_건수'를 더합니다.
+rentals = df.groupby('시작_대여소명')['전체_건수'].sum().reset_index()
+rentals.columns = ['대여소명', '대여건수']  # 컬럼 이름을 보기 좋게 바꿉니다.
 
-# -----------------------------
-# 데이터 불러오기
-# -----------------------------
-@st.cache_data
-def load_data():
-    df = pd.read_excel("titanic.xlsx")
-    df.columns = df.columns.str.strip().str.lower()
-    return df
+# 3. 반납 건수 계산하기 (도착 대여소 기준)
+# '종료_대여소명'이 같은 것끼리 모아서 '전체_건수'를 더합니다.
+returns = df.groupby('종료_대여소명')['전체_건수'].sum().reset_index()
+returns.columns = ['대여소명', '반납건수']
 
-df = load_data()
+# 4. 두 데이터 합치기 (대여 + 반납)
+# '대여소명'을 기준으로 두 표를 하나로 합칩니다. (빈칸은 0으로 채움)
+station_stats = pd.merge(rentals, returns, on='대여소명', how='outer').fillna(0)
 
-# -----------------------------
-# 컬럼 확인
-# -----------------------------
-st.subheader("컬럼 목록")
-st.write(df.columns.tolist())
+# 전처리 결과 확인
+print(station_stats.head())
 
-# -----------------------------
-# SibSp 분석
-# -----------------------------
-st.subheader("형제/배우자 수(sibsp)와 생존율")
+# 1. 총 이용 건수 만들기 (대여 + 반납)
+station_stats['총이용건수'] = station_stats['대여건수'] + station_stats['반납건수']
 
-if "sibsp" in df.columns and "survived" in df.columns:
-    sibsp_stats = (
-        df.groupby("sibsp")
-        .agg(
-            survival_rate=("survived", "mean"),
-            count=("survived", "count")
-        )
-        .reset_index()
-    )
+# 2. 이상한 데이터 제거 (건수가 0보다 작은 경우)
+# 혹시라도 계산 오류로 음수가 나오면 제거합니다.
+station_stats = station_stats[station_stats['총이용건수'] > 0]
 
-    st.dataframe(sibsp_stats)
+print("데이터 준비 완료!")
 
-    sibsp_chart = (
-        alt.Chart(sibsp_stats)
-        .mark_bar()
-        .encode(
-            x=alt.X("sibsp:O", title="형제/배우자 수"),
-            y=alt.Y("survival_rate:Q", title="생존율"),
-            tooltip=[
-                alt.Tooltip("sibsp:O", title="형제/배우자 수"),
-                alt.Tooltip("survival_rate:Q", title="생존율", format=".2f"),
-                alt.Tooltip("count:Q", title="인원 수(명)")
-            ]
-        )
-    )
+# 1. 정규화 준비하기 (최대값과 최소값 찾기)
+# '총이용건수' 중에서 가장 작은 값(min)과 가장 큰 값(max)을 찾습니다.
+min_val = station_stats['총이용건수'].min()
+max_val = station_stats['총이용건수'].max()
 
-    st.altair_chart(sibsp_chart, use_container_width=True)
+# 2. 정규화 공식 적용하기 (Min-Max Scaling)
+# 공식: (내 점수 - 꼴찌 점수) / (1등 점수 - 꼴찌 점수)
+# 이렇게 계산하면 가장 적게 이용된 곳은 0, 가장 많이 이용된 곳은 1이 됩니다.
+station_stats['이용건수_정규화'] = (station_stats['총이용건수'] - min_val) / (max_val - min_val)
 
-else:
-    st.error("필요한 컬럼(sibsp, survived)이 없습니다.")
+# 3. 결과 확인하기
+# 원래 건수와 0~1로 변한 숫자를 비교해 봅니다.
+print(station_stats[['대여소명', '총이용건수', '이용건수_정규화']].head())
 
-# -----------------------------
-# Parch 분석
-# -----------------------------
-st.subheader("부모/자녀 수(parch)와 생존율")
+# 1. 한글 폰트 설정
+plt.rc('font', family='Malgun Gothic')
 
-if "parch" in df.columns and "survived" in df.columns:
-    parch_stats = (
-        df.groupby("parch")
-        .agg(
-            survival_rate=("survived", "mean"),
-            count=("survived", "count")
-        )
-        .reset_index()
-    )
+# 2. 인기 순위 Top 10 뽑기
+# 총 이용 건수가 많은 순서대로(ascending=False) 정렬하여 10개만 뽑습니다.
+top10 = station_stats.sort_values(by='총이용건수', ascending=False).head(10)
 
-    st.dataframe(parch_stats)
+# 3. 그래프 그리기
+plt.figure(figsize=(10, 6))  # 도화지 크기
+plt.barh(top10['대여소명'], top10['총이용건수'], color='skyblue') # 가로 막대 그리기
 
-    parch_chart = (
-        alt.Chart(parch_stats)
-        .mark_bar()
-        .encode(
-            x=alt.X("parch:O", title="부모/자녀 수"),
-            y=alt.Y("survival_rate:Q", title="생존율"),
-            tooltip=[
-                alt.Tooltip("parch:O", title="부모/자녀 수"),
-                alt.Tooltip("survival_rate:Q", title="생존율", format=".2f"),
-                alt.Tooltip("count:Q", title="인원 수(명)")
-            ]
-        )
-    )
+plt.title('서울시 따릉이 이용 건수 Top 10 대여소') # 제목
+plt.xlabel('총 이용 건수 (회)')  # x축 이름
+plt.ylabel('대여소명')           # y축 이름
 
-    st.altair_chart(parch_chart, use_container_width=True)
-
-else:
-    st.error("필요한 컬럼(parch, survived)이 없습니다.")
-
-# -----------------------------
-# 분석 요약
-# -----------------------------
-st.subheader("분석 요약")
-st.markdown(
-    "- 가족 구성원이 1~2명인 경우 생존율이 상대적으로 높게 나타난다.\n"
-    "- 가족 수가 많아질수록 생존율이 감소하는 경향을 보인다.\n"
-    "- 막대그래프의 툴팁을 통해 각 범주별 생존율과 실제 인원 수를 함께 확인할 수 있다."
-)
+plt.gca().invert_yaxis()         # 1등이 맨 위에 오도록 뒤집기
+plt.grid(axis='x', linestyle='--') # 눈금선 추가
+plt.show()
