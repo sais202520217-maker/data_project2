@@ -18,7 +18,7 @@ st.title("🚢 가족 구성에 따른 생존율 분석")
 @st.cache_data
 def load_data():
     # 파일명이 titanic.xlsx 인 경우
-    return pd.read_excel("titanic.xls")
+    return pd.read_excel("titanic.xlsx")
 
 df = load_data()
 
