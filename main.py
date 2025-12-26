@@ -2,7 +2,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 # 파일의 실제 컬럼 이름에 맞춰 데이터를 읽어옵니다.
-df = pd.read_csv("tpss_bcycl_od_statnhm_20251130.csv", encoding='cp949')
+df = pd.read_csv("bcycl_20251221.csv", encoding='cp949')
 
 # 2. 대여 건수 계산하기 (출발 대여소 기준)
 # '시작_대여소명'이 같은 것끼리 모아서 '전체_건수'를 더합니다.
