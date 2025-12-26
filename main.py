@@ -53,7 +53,7 @@ if "SibSp" in df.columns and "Survived" in df.columns:
     )
 
     st.dataframe(sibsp_survival)
-    st.bar_chart(sibsp_survival.set_index("SibSp"))
+    st.bar_chart(sibsp_survival.set_index("sibsp"))
 else:
     st.error("SibSp 또는 Survived 컬럼이 없습니다.")
 
@@ -70,7 +70,7 @@ if "Parch" in df.columns and "Survived" in df.columns:
     )
 
     st.dataframe(parch_survival)
-    st.bar_chart(parch_survival.set_index("Parch"))
+    st.bar_chart(parch_survival.set_index("parch"))
 else:
     st.error("Parch 또는 Survived 컬럼이 없습니다.")
 
