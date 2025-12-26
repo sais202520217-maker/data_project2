@@ -2,7 +2,14 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 
-st.set_page_config(page_title="가족 구성과 생존율 분석", layout="centered")
+# -------------------------------
+# 페이지 설정
+# -------------------------------
+st.set_page_config(
+    page_title="가족 구성과 생존율 분석",
+    layout="centered"
+)
+
 st.title("🚢 가족 구성에 따른 생존율 분석")
 
 # -------------------------------
@@ -10,7 +17,8 @@ st.title("🚢 가족 구성에 따른 생존율 분석")
 # -------------------------------
 @st.cache_data
 def load_data():
-    return pd.read_excel("titanic.xls")
+    # 파일명이 titanic.xlsx 인 경우
+    return pd.read_excel("titanic.xlsx", engine="openpyxl")
 
 df = load_data()
 
@@ -23,17 +31,17 @@ st.write(list(df.columns))
 st.subheader("👨‍👩‍👧 형제/배우자 수와 생존율")
 
 sibsp_survival = (
-    df.groupby("sibsp", as_index=False)["survived"].mean()
+    df.groupby("SibSp", as_index=False)["Survived"].mean()
 )
 
 fig1 = px.bar(
     sibsp_survival,
-    x="sibsp",
-    y="survived",
+    x="SibSp",
+    y="Survived",
     title="형제/배우자 수에 따른 생존율",
     labels={
-        "sibsp": "형제 / 배우자 수",
-        "survived": "생존율"
+        "SibSp": "형제 / 배우자 수",
+        "Survived": "생존율"
     },
     range_y=[0, 1]
 )
@@ -48,17 +56,17 @@ st.caption("※ 1~2명의 형제 또는 배우자와 함께 탑승한 경우 생
 st.subheader("👪 부모/자녀 수와 생존율")
 
 parch_survival = (
-    df.groupby("parch", as_index=False)["survived"].mean()
+    df.groupby("Parch", as_index=False)["Survived"].mean()
 )
 
 fig2 = px.bar(
     parch_survival,
-    x="parch",
-    y="survived",
+    x="Parch",
+    y="Survived",
     title="부모/자녀 수에 따른 생존율",
     labels={
-        "parch": "부모 / 자녀 수",
-        "survived": "생존율"
+        "Parch": "부모 / 자녀 수",
+        "Survived": "생존율"
     },
     range_y=[0, 1]
 )
@@ -72,20 +80,21 @@ st.caption("※ 부모 또는 자녀와 동반 탑승한 승객의 생존율이 
 # -------------------------------
 st.subheader("🏠 가족 규모와 생존율")
 
-df["familysize"] = df["sibsp"] + df["parch"] + 1
+df["FamilySize"] = df["SibSp"] + df["Parch"] + 1
+
 family_survival = (
-    df.groupby("familysize", as_index=False)["survived"].mean()
+    df.groupby("FamilySize", as_index=False)["Survived"].mean()
 )
 
 fig3 = px.line(
     family_survival,
-    x="familysize",
-    y="survived",
+    x="FamilySize",
+    y="Survived",
     markers=True,
     title="가족 규모에 따른 생존율 변화",
     labels={
-        "familysize": "가족 구성원 수",
-        "survived": "생존율"
+        "FamilySize": "가족 구성원 수",
+        "Survived": "생존율"
     },
     range_y=[0, 1]
 )
